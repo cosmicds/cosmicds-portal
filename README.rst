@@ -41,9 +41,8 @@ Starting the Server
 
 Install the package and use the following command to start the server
 
-```
-SOLARA_APP=cosmicds_portal.pages uvicorn --workers 4 --host 0.0.0.0 --port 8865 solara.server.fastapi:app  --log-level=debug
-```
+
+    SOLARA_APP=cosmicds_portal.pages uvicorn --workers 4 --host 0.0.0.0 --port 8865 solara.server.fastapi:app  --log-level=debug
 
 .. _pyscaffold-notes:
 
