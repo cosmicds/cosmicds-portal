@@ -30,15 +30,20 @@
 |
 
 ===============
-cosmicds-portal
+CosmicDS Portal
 ===============
 
 
-    Add a short description here!
+Front-end user portal for users and educators to setup classes and data stories.
 
+Starting the Server
+===================
 
-A longer description of your project goes here...
+Install the package and use the following command to start the server
 
+```
+SOLARA_APP=cosmicds_portal.pages uvicorn --workers 4 --host 0.0.0.0 --port 8865 solara.server.fastapi:app  --log-level=debug
+```
 
 .. _pyscaffold-notes:
 
