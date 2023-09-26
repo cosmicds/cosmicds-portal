@@ -25,88 +25,141 @@ v.theme.dark = True
 
 @solara.component
 def Page():
-    with rv.Row() as main:
-        with rv.Col(cols=6):
-            rv.Html(tag="div", children="Our Mission", class_="display-1")
-            # with rv.Html(tag="p", class_="subtitle-1"):
-            solara.Markdown(
-                """
-The world is fast-becoming a place driven by data.  To address dire shortages 
-of data-competency in the workforce, industry leaders are calling for 
-educational pathways that teach people how to interact with data.  The Cosmic 
-Data Stories (CosmicDS) project promotes public understanding of data science 
-through engaging, interactive data stories.
+    with solara.Row(classes=['fill-height']) as main:
+        with solara.Columns([8, 4]):
+            with solara.Column():
+                # solara.HTML(tag="div", children="Our Mission", class_="display-1")
+                solara.Text("Our Mission", classes=["display-1"])
+                # with rv.Html(tag="p", class_="subtitle-1"):
+                solara.Markdown(
+                    """
+    The world is fast-becoming a place driven by data.  To address dire shortages 
+    of data-competency in the workforce, industry leaders are calling for 
+    educational pathways that teach people how to interact with data.  The Cosmic 
+    Data Stories (CosmicDS) project promotes public understanding of data science 
+    through engaging, interactive data stories.
+    
+    The project facilitates connections between astronomers who want to tell the 
+    story of a discovery and learners who can interrogate the data behind the 
+    story on their own, using easy-to-use but powerful data science and 
+    visualization techniques."""
+                )
 
-The project facilitates connections between astronomers who want to tell the 
-story of a discovery and learners who can interrogate the data behind the 
-story on their own, using easy-to-use but powerful data science and 
-visualization techniques."""
-            )
+            with solara.Column():
+                with rv.Card(flat=True, outlined=True):
+                    with rv.CardTitle():
+                        solara.Text("Getting Started")
 
-        with rv.Col(cols=6):
-            rv.Sheet(
-                rounded="lg", color="#cccccc", class_="fill-height", min_height="20vh"
-            )
+                    with rv.CardText():
+                        with solara.Column():
+                            with solara.Link(solara.resolve_path("/register")):
+                                solara.Button(label="Educator", outlined=True,
+                                              style="width: 100%")
+
+                            solara.Button(label="Student", outlined=True)
+
+                    with rv.ExpansionPanels(flat=True):
+                        with rv.ExpansionPanel():
+                            with rv.ExpansionPanelHeader():
+                                solara.Text("Why create an account?")
+
+                            with rv.ExpansionPanelContent():
+                                solara.Markdown("""
+In Cosmic Data Stories, students collect and analyze their own astronomy data. 
+Students’ measurements are stored anonymously in the CosmicDS database. Creating an account will:
+
+- Associate student data with their class cohort.
+- Allow students to view their results within the context of their class’s dataset and the full participant dataset.
+- Keep track of students’ place within the data story if they aren’t able to finish the story within one class period
+""")
+                        with rv.ExpansionPanel():
+                            with rv.ExpansionPanelHeader():
+                                solara.Text("How do accounts work?")
+
+                            with rv.ExpansionPanelContent():
+                                solara.Markdown("""
+Educators complete a brief form to receive a CosmicDS educator key by email.
+
+Educators and Students access the CosmicDS portal and Data Story app by logging 
+on through the OAuth authentication service. You can use credentials from 
+common services like gmail or microsoft.
+
+Educators enter their educator key to create classroom keys that associates 
+students’ accounts with you and their classmates.
+
+""")
+                        with rv.ExpansionPanel():
+                            with rv.ExpansionPanelHeader():
+                                solara.Text("Privacy Policy")
+
+                            with rv.ExpansionPanelContent():
+                                solara.Markdown("""
+Educator contact information is stored according to 
+<link to Harvard privacy policy>. Used for …
+
+Student contact information is anonymized by …
+""")
 
     return main
 
 
 @solara.component
 def Layout(children=[]):
-    router = solara.use_context(solara.routing.router_context)
-    level = solara.use_route_level()
-
     with rv.App(dark=True) as main:
         solara.Title("Testing")
 
         with rv.AppBar(elevate_on_scroll=True, app=True):
-            with rv.Container(class_="fill-height d-flex align-center"):
-                with solara.Link(solara.resolve_path("/")):
-                    rv.Avatar(class_="me-10 ms-4", color="#cccccc", size="32")
+            # with rv.Container(class_="fill-height d-flex align-center"):
+            with solara.Link(solara.resolve_path("/")):
+                rv.Avatar(class_="me-10 ms-4", color="#cccccc", size="32")
 
-                with solara.Link(solara.resolve_path("/data_stories")):
-                    rv.Btn(text=True, children=["Data Stories"])
+            with solara.Link(solara.resolve_path("/data_stories")):
+                level = solara.use_route_level()
+                rv.Btn(text=True, children=["Data Stories"])
 
-                rv.Btn(text=True, children=["Mini Stories"])
+            rv.Btn(text=True, children=["Mini Stories"])
 
-                rv.Spacer()
+            rv.Spacer()
 
-                # Login(text=True)
+            # Login(text=True)
 
-                # with solara.Link(solara.resolve_path("/register")):
-                #     rv.Btn(children=["Register"], depressed=True)
+            # with solara.Link(solara.resolve_path("/register")):
+            #     rv.Btn(children=["Register"], depressed=True)
 
-                if not auth.user.value:
-                    solara.Button(
-                        "Login",
-                        icon_name="mdi-logon",
-                        href=auth.get_login_url(),
-                        depressed=True,
+            if not auth.user.value:
+                solara.Button(
+                    "Login",
+                    icon_name="mdi-logon",
+                    href=auth.get_login_url(),
+                    depressed=True,
+                )
+            else:
+                user_info = auth.user.value["userinfo"]
+
+                if "name" in user_info:
+                    solara.Markdown(f"{user_info['name']}")
+
+                with solara.Link(solara.resolve_path("/account")):
+                    rv.Btn(
+                        children=[rv.Icon(children=["mdi-account"])],
+                        # icon=True,
+                        elevation=0,
+                        color="green",
                     )
-                else:
-                    user_info = auth.user.value["userinfo"]
-
-                    if "name" in user_info:
-                        solara.Markdown(f"{user_info['name']}")
-
-                    with solara.Link(solara.resolve_path("/create_class")):
-                        rv.Btn(
-                            children=["Create Class"],
-                            outlined=True,
-                            color="green",
-                        )
-                    solara.Button(
-                        "Logout",
-                        icon_name="mdi-logout",
-                        href=auth.get_logout_url(),
-                        depressed=True,
-                    )
+                solara.Button(
+                    "Logout",
+                    icon_name="mdi-logout",
+                    href=auth.get_logout_url(),
+                    depressed=True,
+                )
 
         with rv.Content():
-            if level == 0:
+            route_current, routes = solara.use_route()
+
+            if route_current.path == '/':
                 Hero()
 
-            with rv.Container(children=children):
+            with rv.Container(children=children, class_="pt-8"):
                 pass
 
         with rv.Footer(app=False, padless=True):

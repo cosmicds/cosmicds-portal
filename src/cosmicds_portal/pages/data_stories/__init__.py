@@ -7,6 +7,8 @@ from ...components.story_card import StoryCard
 @solara.component
 def Page():
     with rv.ItemGroup() as main:
+        solara.Text("Data Stories", classes=["display-1"])
+
         with rv.Container():
             with rv.Row():
 
