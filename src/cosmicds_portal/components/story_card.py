@@ -22,6 +22,7 @@ def StoryCard():
         with rv.CardActions():
             rv.Btn(children=["Details"], color="orange")
             rv.Spacer()
-            rv.Btn(children=["Create Class"])
+            solara.HTML("div",
+                        unsafe_innerHTML="<a href='https://cosmicds.2i2c.cloud/hub/user-redirect/hubble/'>Create</a>")
 
     return story_card
