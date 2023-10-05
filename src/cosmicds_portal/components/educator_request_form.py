@@ -1,79 +1,113 @@
-import re
-
 import solara
 from solara.alias import rv
-from solara_enterprise import auth
 
 
 @solara.component
-def EducatorRequestForm():
-    valid, set_valid = solara.use_state({
-        "valid": False,
-        "first_name": "",
-        "last_name": "",
-        "email": "",
-        "confirm_email": "",
-        "school_name": "",
-        "school_zip": None,
-        "grade_levels": [],
-        "classes": [],
-    })
+def EducatorRequestForm(form_data, set_form_data):
+    submitted, set_submitted = solara.use_state(False)
 
-    with rv.Form(v_model=valid["valid"], on_v_model=lambda x: set_valid(
-            {**valid, 'valid': x})) as main:
-        with rv.Card(outlined=True):
-            with rv.CardText():
-                with solara.Row():
-                    rv.TextField(v_model=valid["first_name"],
-                                 on_v_model=lambda x: set_valid(
-                                     {**valid, 'first_name': x}),
-                                 label="First name",
-                                 required=True)
-                    rv.TextField(v_model=valid['last_name'],
-                                 on_v_model=lambda x: set_valid(
-                                     {**valid, 'last_name': x}),
-                                 label="Last name",
-                                 required=True)
-                rv.TextField(v_model=valid['email'],
-                             on_v_model=lambda x: set_valid(
-                                 {**valid, 'email': x}),
-                             label="Email",
-                             required=True)
-                rv.TextField(v_model=valid['confirm_email'],
-                             on_v_model=lambda x: set_valid(
-                                 {**valid, 'confirm_email': x}),
-                             label="Confirm email",
-                             required=True)
-                rv.TextField(v_model=valid['school_name'],
-                             on_v_model=lambda x: set_valid(
-                                 {**valid, 'school_name': x}),
-                             label="School name",
-                             required=True)
-                rv.TextField(v_model=valid['school_zip'],
-                             on_v_model=lambda x: set_valid(
-                                 {**valid, 'school_zip': x}),
-                             label="School zip code",
-                             required=True)
-                rv.Select(v_model=valid["grade_levels"],
-                          on_v_model=lambda x: set_valid(
-                              {**valid, 'grade_levels': x}),
-                          label="Grade levels taught",
-                          items=["Elementary", "Middle School", "High School",
-                                 "Undergraduate", "Graduate"],
-                          multiple=True
-                          )
-                rv.TextField(v_model=valid['classes'],
-                             on_v_model=lambda x: set_valid(
-                                 {**valid, 'classes': x}),
-                             label="Classes taught",
-                             required=True)
+    if submitted:
+        rv.Alert(children=[
+            f"Form submitted successfully. You will receive a notification at "
+            f"{form_data['email']} when your account has been verified."],
+            type="success")
 
-            rv.Divider()
-            with rv.CardActions():
-                rv.Spacer()
-                solara.Button("Clear", text=True)
-                solara.Button("Submit", elevation=0, color="success")
+    def _update_form_data(new_data):
+        set_form_data({**new_data, 'valid': all(
+            [x is True for y in rules.values() for x in y])})
 
-        solara.Markdown(f"{valid}")
+    rules = {
+        "first_name": [
+            len(form_data[
+                    "first_name"]) > 3 or "Must be more than 2 characters"
+        ],
+        "last_name": [
+            len(form_data[
+                    "first_name"]) > 3 or "Must be more than 2 characters"
+        ],
+        "email": [
+            len(form_data['email']) > 0 or "Must enter an email"
+        ],
+        "confirm_email": [
+            form_data['email'] == form_data[
+                'confirm_email'] or "Emails must match"
+        ],
+        "school_name": [
+            len(form_data['school_name']) > 0 or "Must enter an school name"
+        ],
+        "school_zip": [
+            len(form_data['school_zip']) > 0 or "Must enter an school zip"
+        ],
+        "grade_levels": [
+            len(form_data['grade_levels']) > 0 or "Must select grade levels"
+        ],
+        "classes_taught": [
+            len(form_data[
+                    'classes_taught']) > 0 or "Must enter an classes taught"
+        ],
+    }
+    with rv.Card(outlined=True, disabled=submitted):
+        with rv.CardText():
+            with solara.Row():
+                rv.TextField(
+                    v_model=form_data["first_name"],
+                    on_v_model=lambda x: _update_form_data(
+                        {**form_data, 'first_name': x}),
+                    label="First name",
+                    rules=rules.get('first_name'),
+                    filled=True,
+                    required=True)
+                rv.TextField(v_model=form_data['last_name'],
+                             on_v_model=lambda x: _update_form_data(
+                                 {**form_data, 'last_name': x}),
+                             label="Last name",
+                             rules=rules.get('last_name'),
+                             filled=True,
+                             required=True)
+            rv.TextField(v_model=form_data['email'],
+                         on_v_model=lambda x: _update_form_data(
+                             {**form_data, 'email': x}),
+                         label="Email",
+                         rules=rules.get('email'),
+                         filled=True,
+                         required=True)
+            rv.TextField(v_model=form_data['confirm_email'],
+                         on_v_model=lambda x: _update_form_data(
+                             {**form_data, 'confirm_email': x}),
+                         label="Confirm email",
+                         rules=rules.get('confirm_email'),
+                         filled=True,
+                         required=True)
+            rv.TextField(v_model=form_data['school_name'],
+                         on_v_model=lambda x: _update_form_data(
+                             {**form_data, 'school_name': x}),
+                         label="School name",
+                         rules=rules.get('school_name'),
+                         filled=True,
+                         required=True)
+            rv.TextField(v_model=form_data['school_zip'],
+                         on_v_model=lambda x: _update_form_data(
+                             {**form_data, 'school_zip': x}),
+                         label="School zip code",
+                         rules=rules.get('school_zip'),
+                         filled=True,
+                         required=True)
+            rv.Select(v_model=form_data["grade_levels"],
+                      on_v_model=lambda x: _update_form_data(
+                          {**form_data, 'grade_levels': x}),
+                      label="Grade levels taught",
+                      items=["Elementary", "Middle School", "High School",
+                             "Undergraduate", "Graduate"],
+                      rules=rules.get('grade_levels'),
+                      filled=True,
+                      multiple=True
+                      )
+            rv.TextField(v_model=form_data['classes_taught'],
+                         on_v_model=lambda x: _update_form_data(
+                             {**form_data, 'classes_taught': x}),
+                         label="Classes taught",
+                         rules=rules.get('classes_taught'),
+                         filled=True,
+                         required=True)
 
-    return main
+    solara.Markdown(f"{form_data}")
