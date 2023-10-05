@@ -1,5 +1,5 @@
 import httpx
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi import Request
 from fastapi.responses import RedirectResponse
 from solara.server.fastapi import app as solapp

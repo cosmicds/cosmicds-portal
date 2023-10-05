@@ -1,10 +1,12 @@
+from pathlib import Path
+
 import ipyvuetify as v
 import solara
 from solara.alias import rv
 from solara_enterprise import auth
 
-from ..components.hero import Hero
-from ..components.login import Login
+from .. import state
+from ..database import get_user
 
 # # required if you don't use the default test account
 # SOLARA_SESSION_SECRET_KEY="SECRETTESTKEY"
@@ -21,6 +23,25 @@ from ..components.login import Login
 
 
 v.theme.dark = True
+
+IMG_PATH = Path("static") / "public" / "images"
+
+
+@solara.component
+def Hero():
+    with rv.Parallax(src=str(IMG_PATH / "opo0006a.jpg")) as hero:
+        with rv.Container():
+            with rv.Row():
+                with rv.Col(cols=6):
+                    # with rv.Container():
+                    rv.Html(tag="div", children=["Cosmic Data Stories"],
+                            class_="display-4")
+                    rv.Html(tag="div", children=[
+                        "Interactive data stories designed by NASA "
+                        "astronomers to inspire learners of all ages "
+                        "to explore the universe."], class_="display-1")
+
+    return hero
 
 
 @solara.component
@@ -106,16 +127,17 @@ Student contact information is anonymized by …
 @solara.component
 def Layout(children=[]):
     with rv.App(dark=True) as main:
-        solara.Title("Testing")
+        solara.Title("Cosmic Data Stories")
 
         with rv.AppBar(elevate_on_scroll=True, app=True):
             # with rv.Container(class_="fill-height d-flex align-center"):
             with solara.Link(solara.resolve_path("/")):
                 rv.Avatar(class_="me-10 ms-4", color="#cccccc", size="32")
 
+            # with rv.ToolbarItems():
             with solara.Link(solara.resolve_path("/data_stories")):
-                level = solara.use_route_level()
-                rv.Btn(text=True, children=["Data Stories"])
+                # rv.Btn(text=True, children=["Data Stories"])
+                solara.Button("Data Stories", text=True)
 
             rv.Btn(text=True, children=["Mini Stories"])
 
@@ -129,15 +151,24 @@ def Layout(children=[]):
             if not auth.user.value:
                 solara.Button(
                     "Login",
-                    icon_name="mdi-logon",
+                    icon_name="mdi-login",
                     href=auth.get_login_url(),
                     depressed=True,
                 )
             else:
-                user_info = auth.user.value["userinfo"]
+                state.user_info = get_user(
+                    auth.user.value['userinfo']['name'])
 
-                if "name" in user_info:
-                    solara.Markdown(f"{user_info['name']}")
+                print(state.user_info)
+
+                if state.user_info is not None:
+                    if state.user_info.get('type') == 'educator':
+                        print("Type defined.")
+                        with solara.Link(solara.resolve_path("/create")):
+                            solara.Button("Create Class", elevation=0)
+                    else:
+                        with solara.Link(solara.resolve_path("/join")):
+                            solara.Button("Join Class", elevation=0)
 
                 with solara.Link(solara.resolve_path("/account")):
                     rv.Btn(
@@ -146,10 +177,15 @@ def Layout(children=[]):
                         elevation=0,
                         color="green",
                     )
+
+                def _logout_button_clicked(*args):
+                    state.user_info = None
+
                 solara.Button(
                     "Logout",
                     icon_name="mdi-logout",
                     href=auth.get_logout_url(),
+                    on_click=_logout_button_clicked,
                     depressed=True,
                 )
 
@@ -179,7 +215,7 @@ def Layout(children=[]):
                         rv.Html(
                             tag="p",
                             children=[
-                                "Copyright © 2021 The President and Fellows of Harvard College"
+                                "Copyright © 2023 The President and Fellows of Harvard College"
                             ],
                         )
 
