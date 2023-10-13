@@ -43,6 +43,7 @@ class EducatorBase(SQLModel):
     school_zip: str
     grade_levels: str
     classes_taught: str
+    type: str = Field(default='educator', const=True)
 
 
 class Educator(EducatorBase, table=True):
@@ -51,11 +52,25 @@ class Educator(EducatorBase, table=True):
                                         link_model=EducatorClassLink)
 
 
-class Student(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+class StudentBase(SQLModel):
     username: str
+    type: str = Field(default='student', const=True)
+
+
+class Student(StudentBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
     classes: List[Class] = Relationship(back_populates="students",
                                         link_model=StudentClassLink)
 
-# if __name__ == "__main__":
-#     SQLModel.metadata.create_all(engine)
+
+if __name__ == "__main__":
+    from pathlib import Path
+
+    from sqlmodel import Session, create_engine, select
+
+    sqlite_file_name = "database.db"
+    sqlite_url = f"sqlite:///{Path(__file__).parent / sqlite_file_name}"
+
+    engine = create_engine(sqlite_url, echo=False)
+
+    SQLModel.metadata.create_all(engine)
