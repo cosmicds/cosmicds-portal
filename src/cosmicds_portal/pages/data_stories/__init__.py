@@ -5,11 +5,14 @@ from solara.alias import rv
 @solara.component
 def StoryCard():
     with rv.Card(max_width=400, class_="mx-auto") as story_card:
-        with rv.Img(class_="white--text align-end", height="200px",
-                    src="https://cdn.vuetifyjs.com/images/cards/docks.jpg"):
-            rv.CardTitle(children=["Hubble"])
+        rv.Img(class_="white--text align-end", height="200px",
+               src="https://cdn.vuetifyjs.com/images/cards/docks.jpg")
 
-        rv.CardSubtitle(children=["Data Story"])
+        with rv.CardTitle():
+            solara.Text("Hubble")
+
+        with rv.CardSubtitle():
+            solara.Text("Data Story")
 
         with rv.CardText():
             solara.Markdown(
@@ -20,10 +23,11 @@ def StoryCard():
                 "If not, how long ago did it form?”")
 
         with rv.CardActions():
-            rv.Btn(children=["Details"], color="orange")
-            rv.Spacer()
-            solara.HTML("div",
-                        unsafe_innerHTML="<a href='https://cosmicds.2i2c.cloud/hub/user-redirect/hubble/'>Create</a>")
+            solara.Button("View", elevation=0, color="primary")
+            # rv.Btn(children=["Details"], color="orange")
+            # rv.Spacer()
+            # solara.HTML("div",
+            #             unsafe_innerHTML="<a href='https://cosmicds.2i2c.cloud/hub/user-redirect/hubble/'>Create</a>")
 
     return story_card
 
@@ -33,11 +37,8 @@ def Page():
     with rv.ItemGroup() as main:
         solara.Text("Data Stories", classes=["display-1"])
 
-        with rv.Container():
-            with rv.Row():
-                for i in range(3):
-                    with rv.Col(md=4):
-                        with rv.Item():
-                            StoryCard()
+        with solara.ColumnsResponsive([4]):
+            for i in range(3):
+                StoryCard()
 
     return main
