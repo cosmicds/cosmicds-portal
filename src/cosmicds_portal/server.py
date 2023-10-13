@@ -1,14 +1,22 @@
-import httpx
-from fastapi import FastAPI
-from fastapi import Request
-from fastapi.responses import RedirectResponse
-from solara.server.fastapi import app as solapp
+from fastapi import FastAPI, Depends, HTTPException, Query
+from pathlib import Path
+from typing import List
 
-CLIENT_ID = "your-client-id"
-CLIENT_SECRET = "your-client-secret"
-CALLBACK_URL = "http://your-callback-url"
+from sqlmodel import Session, create_engine, select
+
+from .models import Educator, Student, Class, EducatorBase, StudentBase
+
+sqlite_file_name = "database.db"
+sqlite_url = f"sqlite:///{Path(__file__).parent / sqlite_file_name}"
+
+engine = create_engine(sqlite_url, echo=False)
 
 app = FastAPI()
+
+
+def get_session():
+    with Session(engine) as session:
+        yield session
 
 
 @app.get("/hello")
@@ -16,48 +24,95 @@ def read_root():
     return {"Hello": "World"}
 
 
-@app.get("/auth")
-def login(request: Request):
-    # Generate the CILogon authorization URL
-    authorization_url = f"https://cilogon.org/authorize?response_type=code&client_id={CLIENT_ID}&redirect_uri={CALLBACK_URL}"
+@app.get("/api/users/{username}")
+def get_user(*, session: Session = Depends(get_session), username: str):
+    statement = select(Educator).where(
+        Educator.username == username)
+    results = session.exec(statement).first()
 
-    # Redirect the user to the CILogon authentication page
-    return RedirectResponse(authorization_url)
+    if results is not None:
+        return results
 
+    statement = select(Student).where(
+        Student.username == username)
+    results = session.exec(statement).first()
 
-@app.get("/auth/callback")
-async def callback(code: str, request: Request):
-    # Exchange the authorization code for an access token
-    token_endpoint = "https://cilogon.org/oauth2/token"
-    token_params = {
-        "grant_type": "authorization_code",
-        "client_id": CLIENT_ID,
-        "client_secret": CLIENT_SECRET,
-        "redirect_uri": CALLBACK_URL,
-        "code": code,
-    }
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post(token_endpoint, data=token_params)
-
-    response.raise_for_status()
-    access_token = response.json()["access_token"]
-
-    # Retrieve user information using the access token
-    userinfo_endpoint = "https://cilogon.org/oauth2/userinfo"
-    headers = {"Authorization": f"Bearer {access_token}"}
-
-    async with httpx.AsyncClient() as client:
-        response = await client.get(userinfo_endpoint, headers=headers)
-
-    response.raise_for_status()
-    userinfo = response.json()
-
-    # Process user information and create a session for the user
-    # (Note: This is a simplified example, you may need to implement your own logic here)
-
-    # Return a response to the authenticated user
-    return {"message": f"Hello, {userinfo['name']}!"}
+    if results is not None:
+        return results
 
 
-app.mount("/", app=solapp)
+@app.get("/api/users/{username}/classes", response_model=List[Class])
+def get_user_classes(*, session: Session = Depends(get_session),
+                     username: str):
+    user = get_user(username=username, session=session)
+
+    return user.classes
+
+
+@app.post("/api/classes/join")
+def add_student_to_class(*, session: Session = Depends(get_session),
+                         username: str, class_code: str):
+    student = session.exec(select(Student).where(
+        Student.username == username)).first()
+    class_ = session.exec(select(Class).where(
+        Class.code == class_code)).first()
+
+    if class_ is not None:
+        student.classes.append(class_)
+
+        session.add(student)
+        session.commit()
+        session.refresh(student)
+
+        return student
+
+
+# def check_user_type_defined(username: str) -> bool:
+#     return get_user(username) is not None
+
+
+@app.post("/api/users/create/educator", response_model=EducatorBase)
+def create_educator(*, session: Session = Depends(get_session),
+                    educator: Educator):
+    session.add(educator)
+    session.commit()
+    session.refresh(educator)
+
+    return educator
+
+
+@app.post("/api/users/create/student", response_model=StudentBase)
+def create_student(*, session: Session = Depends(get_session),
+                   student: Student):
+    session.add(student)
+    session.commit()
+    session.refresh(student)
+
+    return student
+
+
+@app.post("/api/classes/create")
+def create_class(*, session: Session = Depends(get_session), username: str,
+                 class_: Class):
+    educator = session.exec(select(Educator).where(
+        Educator.username == username)).first()
+
+    educator.classes.append(class_)
+
+    session.add(class_)
+    session.add(educator)
+    session.commit()
+    session.refresh(class_)
+    session.refresh(educator)
+
+    return class_
+
+
+@app.delete("/api/classes/{code}")
+def delete_class(*, session: Session = Depends(get_session), code: str):
+    class_ = session.exec(select(Class).where(
+        Class.code == code)).first()
+
+    if class_ is not None:
+        session.delete(class_)
+        session.commit()
