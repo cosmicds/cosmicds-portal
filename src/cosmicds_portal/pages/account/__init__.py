@@ -1,24 +1,25 @@
 import solara
 from solara.alias import rv
-from solara_enterprise import auth
+import httpx
 
-from ... import state
+from ..state import user
 from ...components.educator_request_form import EducatorRequestForm
-from ...database import create_educator, create_student
 
 
 @solara.component
 def Page():
+    location_context = solara.use_context(solara.routing._location_context)
+
     step, set_step = solara.use_state(1)
-    level, set_level = solara.use_state(
-        0)  # 0 - undefined, 1 - educator, 2 - student
-    user_info = auth.user.value["userinfo"]
+
+    # 0 - undefined, 1 - educator, 2 - student
+    level, set_level = solara.use_state(0)
 
     stu_form_data, set_stu_form_data = solara.use_state({
         "username": ""
     })
 
-    set_stu_form_data({'username': user_info['name']})
+    set_stu_form_data({'username': user.value['username']})
 
     edu_form_data, set_edu_form_data = solara.use_state({
         "valid": False,
@@ -34,9 +35,9 @@ def Page():
         "classes_taught": "",
     })
 
-    set_edu_form_data({**edu_form_data, 'username': user_info['name']})
+    set_edu_form_data({**edu_form_data, 'username': user.value['username']})
 
-    if state.user_info is None:
+    if not user.value['setup_completed']:
         solara.Text("Account Setup",
                     classes=["display-1", "pb-4"])
 
@@ -118,20 +119,40 @@ def Page():
 
                     def _submit_form():
                         if level == 1:
-                            result = create_educator(
-                                {**edu_form_data})
+                            payload = {**edu_form_data}
+                            payload['grade_levels'] = ','.join(
+                                payload['grade_levels'])
+                            del payload['valid']
+                            del payload['confirm_email']
+
+                            r = httpx.post(
+                                f"http://127.0.0.1:8000/api/users/create/educator",
+                                json=payload)
                         elif level == 2:
-                            result = create_student({**stu_form_data})
+                            payload = {**stu_form_data}
 
-                        print(result)
+                            r = httpx.post(
+                                f"http://127.0.0.1:8000/api/users/create/student",
+                                json=payload)
 
-                        if result['ok']:
-                            rv.Alert(color="success",
-                                     children=[
-                                         "Account setup successfully completed"])
-                        else:
-                            rv.Alert(color="error",
-                                     children=[result['error']])
+                        if r.status_code == 200:
+                            user.set({**user.value, 'setup_completed': True})
+
+                            location_context.pathname = '/'
+
+                        # if result['ok']:
+                        #     rv.Alert(color="success",
+                        #              children=[
+                        #                  "Account setup successfully completed"])
+                        #
+                        #     auth.user = auth.user.value.update(get_user(
+                        #         auth.user.value['userinfo']['name']))
+                        #
+                        #     redirect('/')
+
+                        # else:
+                        #     rv.Alert(color="error",
+                        #              children=[result['error']])
 
                     with solara.CardActions():
                         solara.Button(label="Back", text=True,
@@ -141,10 +162,10 @@ def Page():
     else:
         solara.Text("Account", classes=["display-1"])
 
-        solara.Text(f"{state.user_info}")
+        solara.Text(f"{user}")
 
         with solara.GridLayout():
-            for k, v in state.user_info.items():
+            for k, v in user.value.items():
                 solara.Text("HERE")
                 # print(k, v)
                 # solara.Text(f"{k}")

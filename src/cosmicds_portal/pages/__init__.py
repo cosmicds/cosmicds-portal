@@ -4,23 +4,9 @@ import ipyvuetify as v
 import solara
 from solara.alias import rv
 from solara_enterprise import auth
+import httpx
 
-from .. import state
-from ..database import get_user
-
-# # required if you don't use the default test account
-# SOLARA_SESSION_SECRET_KEY="SECRETTESTKEY"
-# # found in the Auth0 dashboard Applications->Applications->Client ID
-# SOLARA_OAUTH_CLIENT_ID="ohpOLLdBibfGp2YUVwkmokTw18CXiD0B"
-# # found in the Auth0 dashboard Applications->Applications->Client secret
-# SOLARA_OAUTH_CLIENT_SECRET="DRmKDfn4ikzkdkSHXvCQPg6p0vQe46aCqmUND4YVQ9yzxZPrjdqp9qdMkGBl23MC"
-# # found in the Auth0 dashboard Applications->Applications->Domain
-# SOLARA_OAUTH_API_BASE_URL="dev-tbr72rd5whnwlyrg.us.auth0.com"
-# SOLARA_OAUTH_SCOPE="openid profile email"
-
-# # For testing locally
-# SOLARA_SESSION_HTTPS_ONLY= "false"
-
+from .state import user
 
 v.theme.dark = True
 
@@ -49,9 +35,7 @@ def Page():
     with solara.Row(classes=['fill-height']) as main:
         with solara.Columns([8, 4]):
             with solara.Column():
-                # solara.HTML(tag="div", children="Our Mission", class_="display-1")
                 solara.Text("Our Mission", classes=["display-1"])
-                # with rv.Html(tag="p", class_="subtitle-1"):
                 solara.Markdown(
                     """
     The world is fast-becoming a place driven by data.  To address dire shortages 
@@ -126,27 +110,29 @@ Student contact information is anonymized by …
 
 @solara.component
 def Layout(children=[]):
+    location_context = solara.use_context(solara.routing._location_context)
+    snackbar, set_snackbar = solara.use_state(True)
+
+    # def _update_user_info(new, old):
+    #     print("UPDATING-----")
+    #     user_data.set({**user_data.value, **new.get('userinfo')})
+    #
+    # auth.user.subscribe_change(_update_user_info)
+
     with rv.App(dark=True) as main:
         solara.Title("Cosmic Data Stories")
 
         with rv.AppBar(elevate_on_scroll=True, app=True):
-            # with rv.Container(class_="fill-height d-flex align-center"):
             with solara.Link(solara.resolve_path("/")):
                 rv.Avatar(class_="me-10 ms-4", color="#cccccc", size="32")
 
             # with rv.ToolbarItems():
             with solara.Link(solara.resolve_path("/data_stories")):
-                # rv.Btn(text=True, children=["Data Stories"])
                 solara.Button("Data Stories", text=True)
 
             rv.Btn(text=True, children=["Mini Stories"])
 
             rv.Spacer()
-
-            # Login(text=True)
-
-            # with solara.Link(solara.resolve_path("/register")):
-            #     rv.Btn(children=["Register"], depressed=True)
 
             if not auth.user.value:
                 solara.Button(
@@ -156,17 +142,34 @@ def Layout(children=[]):
                     depressed=True,
                 )
             else:
-                state.user_info = get_user(
-                    auth.user.value['userinfo']['name'])
+                if not user.value:
+                    r = httpx.get(
+                        f"http://127.0.0.1:8000/api/users/{auth.user.value['userinfo']['name']}")
 
-                print(state.user_info)
+                    if r.status_code == 200:
+                        if r.json() is None:
+                            print("USER NOT FOUND IN DATABASE")
+                            user.set(
+                                {'username': auth.user.value['userinfo'][
+                                    'name'],
+                                 'setup_completed': False})
+                        else:
+                            print("USER FOUND IN DATABASE")
+                            user.set({**r.json(), 'setup_completed': True})
 
-                if state.user_info is not None:
-                    if state.user_info.get('type') == 'educator':
-                        print("Type defined.")
+                        location_context.pathname = '/'
+
+                elif user.value and not user.value['setup_completed']:
+                    rv.Snackbar(v_model=snackbar, on_v_model=set_snackbar,
+                                timeout=-1,
+                                children=["Your account has not been setup.",
+                                          solara.Button("Setup")])
+
+                if user.value and user.value['setup_completed']:
+                    if user.value.get('type') == 'educator':
                         with solara.Link(solara.resolve_path("/create")):
                             solara.Button("Create Class", elevation=0)
-                    else:
+                    elif user.value.get('type') == 'student':
                         with solara.Link(solara.resolve_path("/join")):
                             solara.Button("Join Class", elevation=0)
 
@@ -179,7 +182,8 @@ def Layout(children=[]):
                     )
 
                 def _logout_button_clicked(*args):
-                    state.user_info = None
+                    user.set(None)
+                    location_context.pathname = '/'
 
                 solara.Button(
                     "Logout",

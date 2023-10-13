@@ -1,8 +1,8 @@
 import solara
 from solara.alias import rv
+import httpx
 
-from ... import state
-from ...database import get_student_classes, add_student_to_class
+from ..state import user
 
 
 @solara.component
@@ -49,15 +49,19 @@ def Page():
     classes, set_classes = solara.use_state([])
 
     def _update_classes():
-        student_classes = get_student_classes(state.user_info['username'])
+        r = httpx.get(
+            f"http://127.0.0.1:8000/api/users/{user.value['username']}/classes")
 
-        if student_classes is not None:
-            set_classes(student_classes)
+        if r.json() is not None:
+            set_classes(r.json())
 
     _update_classes()
 
     def _add_button_clicked(*args):
-        add_student_to_class(state.user_info['username'], code)
+        r = httpx.post(
+            f"http://127.0.0.1:8000/api/classes/join",
+            params={'username': user.value['username'], 'class_code': code})
+
         _update_classes()
 
     JoinTextField(code, set_code, _add_button_clicked)

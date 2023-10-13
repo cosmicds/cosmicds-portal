@@ -3,13 +3,13 @@ from datetime import date
 import shortuuid
 import solara
 from solara.alias import rv
+import httpx
 
-from ... import state
-from ...database import get_educator_classes, delete_class, create_class
+from ..state import user
 
 
 @solara.component
-def ClassAddDialog(callback, **btn_kwargs):
+def AddClassDialog(callback, **btn_kwargs):
     active, set_active = solara.use_state(False)  #
     text, set_text = solara.use_state("")
     stories, set_stories = solara.use_state([])
@@ -75,18 +75,26 @@ def Page():
     selected_rows, set_selected_rows = solara.use_state([])
 
     def _update_data():
-        set_data(get_educator_classes(state.user_info['username']))
+        r = httpx.get(
+            f"http://127.0.0.1:8000/api/users/{user.value['username']}/classes")
+
+        set_data(r.json())
 
     _update_data()
 
     def _delete_button_clicked(*args):
         for row in selected_rows:
-            delete_class(row['code'])
+            r = httpx.delete(
+                f"http://127.0.0.1:8000/api/classes/{row['code']}")
 
         _update_data()
 
-    def _add_class_callback(item):
-        create_class(state.user_info['username'], item)
+    def _create_class_callback(item):
+        r = httpx.post(
+            f"http://127.0.0.1:8000/api/classes/create",
+            json=item,
+            params={'username': user.value['username']})
+
         _update_data()
 
     rv.DataTable(
@@ -113,7 +121,7 @@ def Page():
                 "variable": "x",
                 "children": [
                     rv.Spacer(),
-                    ClassAddDialog(_add_class_callback),
+                    AddClassDialog(_create_class_callback),
                     solara.Button("Delete", elevation=0,
                                   on_click=_delete_button_clicked,
                                   color="error", classes=["mx-1"])],
