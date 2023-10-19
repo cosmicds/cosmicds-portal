@@ -1,5 +1,5 @@
 .. These are examples of badges you might want to add to your README:
-   please update the URLs accordingly
+please update the URLs accordingly
 
     .. image:: https://api.cirrus-ci.com/github/<USER>/cosmicds-portal.svg?branch=main
         :alt: Built Status
@@ -33,21 +33,39 @@
 CosmicDS Portal
 ===============
 
-
 Front-end user portal for users and educators to setup classes and data stories.
 
 Starting the Server
 ===================
 
-Install the package and use the following command to start the server
+To run the portal locally, there are a series of steps needed to setup the local instance:
+
+1. Clone the repo locally, then change to the package directory. Install the portal package using
+
+.. code-block::
+
+   $ pip install .
+
+2. Generate a local test database by running the `models.py` file
+
+.. code-block::
+
+   $ cd src
+   $ python models.py
+
+   You should see a new `database.db` file in the package directory.
+
+3. Start the database access api server:
+
+.. code-block::
+
+   $ uvicorn cosmicds_portal.server:app --reload
+
+4. Start the Solara portal app (ask @nmearl for the required access tokens if needed)
+
+.. code-block::
+
+   $ SOLARA_SESSION_SECRET_KEY="SECRETTESTKEY" SOLARA_OAUTH_CLIENT_ID="..." SOLARA_OAUTH_CLIENT_SECRET="..." SOLARA_OAUTH_API_BASE_URL="..." SOLARA_OAUTH_SCOPE="openid profile email" SOLARA_SESSION_HTTPS_ONLY=false solara run cosmicds_portal.pages --port=8865
 
 
-    SOLARA_APP=cosmicds_portal.pages uvicorn --workers 4 --host 0.0.0.0 --port 8865 solara.server.fastapi:app  --log-level=debug
 
-.. _pyscaffold-notes:
-
-Note
-====
-
-This project has been set up using PyScaffold 4.4. For details and usage
-information on PyScaffold see https://pyscaffold.org/.
