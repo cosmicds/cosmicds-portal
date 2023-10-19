@@ -16,16 +16,18 @@ IMG_PATH = Path("static") / "public" / "images"
 @solara.component
 def Hero():
     with rv.Parallax(src=str(IMG_PATH / "opo0006a.jpg")) as hero:
-        with rv.Container():
+        with rv.Container(style_="max-width: 1200px"):
             with rv.Row():
-                with rv.Col(cols=6):
+                with rv.Col(cols=9):
                     # with rv.Container():
                     rv.Html(tag="div", children=["Cosmic Data Stories"],
-                            class_="display-4")
+                            class_="display-4",
+                            style_="text-shadow: 1px 1px 8px black")
                     rv.Html(tag="div", children=[
                         "Interactive data stories designed by NASA "
                         "astronomers to inspire learners of all ages "
-                        "to explore the universe."], class_="display-1")
+                        "to explore the universe."], class_="display-1",
+                            style_="text-shadow: 1px 1px 8px black")
 
     return hero
 
@@ -54,14 +56,6 @@ def Page():
                 with rv.Card(flat=True, outlined=True):
                     with rv.CardTitle():
                         solara.Text("Getting Started")
-
-                    with rv.CardText():
-                        with solara.Column():
-                            with solara.Link(solara.resolve_path("/register")):
-                                solara.Button(label="Educator", outlined=True,
-                                              style="width: 100%")
-
-                            solara.Button(label="Student", outlined=True)
 
                     with rv.ExpansionPanels(flat=True):
                         with rv.ExpansionPanel():
@@ -110,14 +104,8 @@ Student contact information is anonymized by …
 
 @solara.component
 def Layout(children=[]):
-    location_context = solara.use_context(solara.routing._location_context)
+    router = solara.use_router()
     snackbar, set_snackbar = solara.use_state(True)
-
-    # def _update_user_info(new, old):
-    #     print("UPDATING-----")
-    #     user_data.set({**user_data.value, **new.get('userinfo')})
-    #
-    # auth.user.subscribe_change(_update_user_info)
 
     with rv.App(dark=True) as main:
         solara.Title("Cosmic Data Stories")
@@ -126,20 +114,19 @@ def Layout(children=[]):
             with solara.Link(solara.resolve_path("/")):
                 rv.Avatar(class_="me-10 ms-4", color="#cccccc", size="32")
 
-            # with rv.ToolbarItems():
-            with solara.Link(solara.resolve_path("/data_stories")):
-                solara.Button("Data Stories", text=True)
-
-            rv.Btn(text=True, children=["Mini Stories"])
+            solara.Button("Data Stories", text=True,
+                          on_click=lambda: router.push("/data_stories"))
+            solara.Button("Mini Stories", text=True,
+                          on_click=lambda: router.push("/"))
 
             rv.Spacer()
 
             if not auth.user.value:
                 solara.Button(
-                    "Login",
-                    icon_name="mdi-login",
+                    "Sign in",
                     href=auth.get_login_url(),
-                    depressed=True,
+                    text=True,
+                    outlined=True
                 )
             else:
                 if not user.value:
@@ -157,39 +144,63 @@ def Layout(children=[]):
                             print("USER FOUND IN DATABASE")
                             user.set({**r.json(), 'setup_completed': True})
 
-                        location_context.pathname = '/'
+                        router.push(f"/")
 
                 elif user.value and not user.value['setup_completed']:
+
+                    def _to_account_setup():
+                        router.push(f"/account")
+
                     rv.Snackbar(v_model=snackbar, on_v_model=set_snackbar,
                                 timeout=-1,
-                                children=["Your account has not been setup.",
-                                          solara.Button("Setup")])
+                                children=[
+                                    "Your account has not been setup.",
+                                    solara.Button("Setup",
+                                                  on_click=_to_account_setup)])
 
                 if user.value and user.value['setup_completed']:
                     if user.value.get('type') == 'educator':
-                        with solara.Link(solara.resolve_path("/create")):
-                            solara.Button("Create Class", elevation=0)
+                        solara.Button("Create Class",
+                                      text=False,
+                                      elevation=0,
+                                      outlined=True,
+                                      color='green',
+                                      on_click=lambda: router.push(
+                                          "/create"))
+                        solara.Button("Dashboard",
+                                      text=False,
+                                      elevation=0,
+                                      outlined=True,
+                                      # color='green',
+                                      on_click=lambda: router.push(
+                                          "/dashboard"))
                     elif user.value.get('type') == 'student':
-                        with solara.Link(solara.resolve_path("/join")):
-                            solara.Button("Join Class", elevation=0)
+                        solara.Button("Join Class",
+                                      text=False,
+                                      elevation=0,
+                                      outlined=True,
+                                      color='green',
+                                      on_click=lambda: router.push(
+                                          "/join"))
 
-                with solara.Link(solara.resolve_path("/account")):
-                    rv.Btn(
-                        children=[rv.Icon(children=["mdi-account"])],
-                        # icon=True,
-                        elevation=0,
-                        color="green",
-                    )
+                rv.Divider(vertical=True, class_="ml-4")
 
-                def _logout_button_clicked(*args):
-                    user.set(None)
-                    location_context.pathname = '/'
+                solara.Button(icon_name="mdi-account",
+                              text=False,
+                              icon=True,
+                              outlined=False,
+                              on_click=lambda: router.push(
+                                  "/account"),
+                              classes=['ml-2'])
 
                 solara.Button(
-                    "Logout",
+                    # "Logout",
                     icon_name="mdi-logout",
+                    text=False,
+                    icon=True,
+                    outlined=False,
                     href=auth.get_logout_url(),
-                    on_click=_logout_button_clicked,
+                    on_click=lambda: user.set(None),
                     depressed=True,
                 )
 
@@ -199,7 +210,8 @@ def Layout(children=[]):
             if route_current.path == '/':
                 Hero()
 
-            with rv.Container(children=children, class_="pt-8"):
+            with rv.Container(children=children, class_="pt-8",
+                              style_="max-width: 1200px"):
                 pass
 
         with rv.Footer(app=False, padless=True):
