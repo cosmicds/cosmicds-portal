@@ -69,6 +69,12 @@ def AddClassDialog(callback, **btn_kwargs):
 
 @solara.component
 def Page():
+    router = solara.use_router()
+
+    if not user.value:
+        router.push(f"/")
+        return
+
     solara.Text("Create Class", classes=["display-1"])
 
     data, set_data = solara.use_state([])

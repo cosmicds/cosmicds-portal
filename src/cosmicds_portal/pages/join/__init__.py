@@ -33,9 +33,10 @@ def ClassStoryCard(title, text, date):
         # with rv.CardText():
         #     solara.Text(f"{text}")
 
+        rv.Divider()
         with rv.CardActions():
-            solara.Button("Leave", color="error", text=True)
             rv.Spacer()
+            solara.Button("Leave", color="error", text=True)
             solara.Button("Open", elevation=0)
 
     return story_card
@@ -43,6 +44,12 @@ def ClassStoryCard(title, text, date):
 
 @solara.component
 def Page():
+    router = solara.use_router()
+
+    if not user.value:
+        router.push(f"/")
+        return
+
     solara.Text("Join Class", classes=["display-1"])
 
     code, set_code = solara.use_state("")

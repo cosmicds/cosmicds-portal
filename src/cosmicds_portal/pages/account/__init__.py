@@ -8,7 +8,11 @@ from ...components.educator_request_form import EducatorRequestForm
 
 @solara.component
 def Page():
-    location_context = solara.use_context(solara.routing._location_context)
+    router = solara.use_router()
+
+    if not user.value:
+        router.push(f"/")
+        return
 
     step, set_step = solara.use_state(1)
 
@@ -138,7 +142,7 @@ def Page():
                         if r.status_code == 200:
                             user.set({**user.value, 'setup_completed': True})
 
-                            location_context.pathname = '/'
+                            router.push(f"/")
 
                         # if result['ok']:
                         #     rv.Alert(color="success",
