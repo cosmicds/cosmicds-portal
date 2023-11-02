@@ -5,7 +5,7 @@ import solara
 from solara.alias import rv
 import httpx
 
-from ..state import user
+from ..state import GLOBAL_STATE
 
 
 @solara.component
@@ -71,7 +71,7 @@ def AddClassDialog(callback, **btn_kwargs):
 def Page():
     router = solara.use_router()
 
-    if not user.value:
+    if not GLOBAL_STATE.user.exists():
         router.push(f"/")
         return
 
@@ -82,7 +82,7 @@ def Page():
 
     def _update_data():
         r = httpx.get(
-            f"http://127.0.0.1:8000/api/users/{user.value['username']}/classes")
+            f"http://127.0.0.1:8000/api/users/{GLOBAL_STATE.user.username.value}/classes")
 
         set_data(r.json())
 
@@ -99,7 +99,7 @@ def Page():
         r = httpx.post(
             f"http://127.0.0.1:8000/api/classes/create",
             json=item,
-            params={'username': user.value['username']})
+            params={'username': GLOBAL_STATE.user.username.value})
 
         _update_data()
 
@@ -123,14 +123,16 @@ def Page():
         ],
         v_slots=[
             {
-                "name": "top",
+                "name": "body.append",
                 "variable": "x",
                 "children": [
-                    rv.Spacer(),
-                    AddClassDialog(_create_class_callback),
-                    solara.Button("Delete", elevation=0,
-                                  on_click=_delete_button_clicked,
-                                  color="error", classes=["mx-1"])],
+                    rv.Row(style_="min-width: 200px", class_="ma-2",
+                           children=[AddClassDialog(_create_class_callback),
+                                     solara.Button("Delete", elevation=0,
+                                                   on_click=_delete_button_clicked,
+                                                   color="error",
+                                                   classes=["mx-2"])])
+                ],
             }
         ],
     )
