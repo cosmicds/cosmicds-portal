@@ -2,7 +2,7 @@ import solara
 from solara.alias import rv
 import httpx
 
-from ..state import user
+from ..state import GLOBAL_STATE
 
 
 @solara.component
@@ -46,7 +46,7 @@ def ClassStoryCard(title, text, date):
 def Page():
     router = solara.use_router()
 
-    if not user.value:
+    if not GLOBAL_STATE.user.exists():
         router.push(f"/")
         return
 
@@ -57,7 +57,7 @@ def Page():
 
     def _update_classes():
         r = httpx.get(
-            f"http://127.0.0.1:8000/api/users/{user.value['username']}/classes")
+            f"http://127.0.0.1:8000/api/users/{GLOBAL_STATE.user.username.value}/classes")
 
         if r.json() is not None:
             set_classes(r.json())
@@ -67,7 +67,8 @@ def Page():
     def _add_button_clicked(*args):
         r = httpx.post(
             f"http://127.0.0.1:8000/api/classes/join",
-            params={'username': user.value['username'], 'class_code': code})
+            params={'username': GLOBAL_STATE.user.username.value,
+                    'class_code': code})
 
         _update_classes()
 

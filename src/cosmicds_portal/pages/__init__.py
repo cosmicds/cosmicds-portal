@@ -6,7 +6,7 @@ from solara.alias import rv
 from solara_enterprise import auth
 import httpx
 
-from .state import user
+from .state import GLOBAL_STATE
 
 v.theme.dark = True
 
@@ -106,6 +106,7 @@ Student contact information is anonymized by …
 def Layout(children=[]):
     router = solara.use_router()
     snackbar, set_snackbar = solara.use_state(True)
+    route_current, routes = solara.use_route()
 
     with rv.App(dark=True) as main:
         solara.Title("Cosmic Data Stories")
@@ -121,7 +122,7 @@ def Layout(children=[]):
 
             rv.Spacer()
 
-            if not auth.user.value:
+            if not GLOBAL_STATE.user.authorized():
                 solara.Button(
                     "Sign in",
                     href=auth.get_login_url(),
@@ -129,52 +130,38 @@ def Layout(children=[]):
                     outlined=True
                 )
             else:
-                if not user.value:
-                    r = httpx.get(
-                        f"http://127.0.0.1:8000/api/users/{auth.user.value['userinfo']['name']}")
+                # TODO: avoid constant DB class on reload
+                GLOBAL_STATE.user.check_database()
 
-                    if r.status_code == 200:
-                        if r.json() is None:
-                            print("USER NOT FOUND IN DATABASE")
-                            user.set(
-                                {'username': auth.user.value['userinfo'][
-                                    'name'],
-                                 'setup_completed': False})
-                        else:
-                            print("USER FOUND IN DATABASE")
-                            user.set({**r.json(), 'setup_completed': True})
+                if not GLOBAL_STATE.user.exists_and_setup():
+                    if route_current.path != 'account_setup':
+                        def _to_account_setup():
+                            router.push(f"/account_setup")
 
-                        router.push(f"/")
-
-                elif user.value and not user.value['setup_completed']:
-
-                    def _to_account_setup():
-                        router.push(f"/account")
-
-                    rv.Snackbar(v_model=snackbar, on_v_model=set_snackbar,
-                                timeout=-1,
-                                children=[
-                                    "Your account has not been setup.",
-                                    solara.Button("Setup",
-                                                  on_click=_to_account_setup)])
-
-                if user.value and user.value['setup_completed']:
-                    if user.value.get('type') == 'educator':
+                        rv.Snackbar(v_model=snackbar, on_v_model=set_snackbar,
+                                    timeout=0,
+                                    # Indefinitely: 0 for veutify < 2.3
+                                    children=[
+                                        "Your account has not been setup.",
+                                        solara.Button("Setup",
+                                                      on_click=_to_account_setup)])
+                else:
+                    if GLOBAL_STATE.user.is_educator():
                         solara.Button("Create Class",
-                                      text=False,
+                                      text=True,
                                       elevation=0,
-                                      outlined=True,
+                                      # outlined=True,
                                       color='green',
                                       on_click=lambda: router.push(
                                           "/create"))
                         solara.Button("Dashboard",
-                                      text=False,
+                                      text=True,
                                       elevation=0,
-                                      outlined=True,
+                                      # outlined=True,
                                       # color='green',
                                       on_click=lambda: router.push(
                                           "/dashboard"))
-                    elif user.value.get('type') == 'student':
+                    elif GLOBAL_STATE.user.is_student():
                         solara.Button("Join Class",
                                       text=False,
                                       elevation=0,
@@ -183,6 +170,7 @@ def Layout(children=[]):
                                       on_click=lambda: router.push(
                                           "/join"))
 
+            if GLOBAL_STATE.user.exists():
                 rv.Divider(vertical=True, class_="ml-4")
 
                 solara.Button(icon_name="mdi-account",
@@ -193,6 +181,9 @@ def Layout(children=[]):
                                   "/account"),
                               classes=['ml-2'])
 
+                def _logout():
+                    GLOBAL_STATE.user.logout()
+
                 solara.Button(
                     # "Logout",
                     icon_name="mdi-logout",
@@ -200,13 +191,11 @@ def Layout(children=[]):
                     icon=True,
                     outlined=False,
                     href=auth.get_logout_url(),
-                    on_click=lambda: user.set(None),
+                    on_click=lambda: _logout(),
                     depressed=True,
                 )
 
         with rv.Content():
-            route_current, routes = solara.use_route()
-
             if route_current.path == '/':
                 Hero()
 
