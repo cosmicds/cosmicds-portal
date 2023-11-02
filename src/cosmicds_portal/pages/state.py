@@ -49,7 +49,8 @@ class UserInfo:
 
 @dataclasses.dataclass
 class GlobalState:
-    user: Reactive[UserInfo] = dataclasses.field(default=UserInfo())
+    user: Reactive[UserInfo] = dataclasses.field(
+        default_factory=UserInfo)
 
 
 GLOBAL_STATE = GlobalState()
