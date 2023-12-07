@@ -5,6 +5,8 @@ from typing import Callable
 import solara.lab
 import time
 
+from ...utils import CDS_API_URL
+
 from ..state import GLOBAL_STATE
 from ...components.educator_request_form import EducatorRequestForm
 
@@ -153,13 +155,13 @@ def Page():
                         del payload['confirm_email']
 
                         r = httpx.post(
-                            f"http://127.0.0.1:8000/api/users/create/educator",
+                            f"{CDS_API_URL}/educators/create",
                             json=payload)
                     elif level == 2:
                         payload = {**stu_form_data}
 
                         r = httpx.post(
-                            f"http://127.0.0.1:8000/api/users/create/student",
+                            f"{CDS_API_URL}/students/create",
                             json=payload)
 
                     if r.status_code == 200:

@@ -1,6 +1,7 @@
 import solara
 from solara.alias import rv
 import httpx
+from ...utils import CDS_API_URL
 
 from ..state import GLOBAL_STATE
 
@@ -57,7 +58,7 @@ def Page():
 
     def _update_classes():
         r = httpx.get(
-            f"http://127.0.0.1:8000/api/users/{GLOBAL_STATE.user.username.value}/classes")
+            f"{CDS_API_URL}/students/{GLOBAL_STATE.user.username.value}/classes")
 
         if r.json() is not None:
             set_classes(r.json())
@@ -66,7 +67,7 @@ def Page():
 
     def _add_button_clicked(*args):
         r = httpx.post(
-            f"http://127.0.0.1:8000/api/classes/join",
+            f"${CDS_API_URL}/classes/join",
             params={'username': GLOBAL_STATE.user.username.value,
                     'class_code': code})
 
