@@ -4,6 +4,7 @@ import shortuuid
 import solara
 from solara.alias import rv
 import httpx
+from ...utils import CDS_API_URL
 
 from ..state import GLOBAL_STATE
 
@@ -82,7 +83,7 @@ def Page():
 
     def _update_data():
         r = httpx.get(
-            f"http://127.0.0.1:8000/api/users/{GLOBAL_STATE.user.username.value}/classes")
+            f"{CDS_API_URL}/educators/{GLOBAL_STATE.user.username.value}/classes")
 
         set_data(r.json())
 
@@ -91,13 +92,13 @@ def Page():
     def _delete_button_clicked(*args):
         for row in selected_rows:
             r = httpx.delete(
-                f"http://127.0.0.1:8000/api/classes/{row['code']}")
+                f"{CDS_API_URL}/classes/{row['code']}")
 
         _update_data()
 
     def _create_class_callback(item):
         r = httpx.post(
-            f"http://127.0.0.1:8000/api/classes/create",
+            f"{CDS_API_URL}/classes/create",
             json=item,
             params={'username': GLOBAL_STATE.user.username.value})
 

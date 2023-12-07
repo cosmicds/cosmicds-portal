@@ -4,6 +4,7 @@ from typing import Optional, cast, Dict, Union
 from solara.lab import Reactive
 import httpx
 from solara_enterprise import auth
+from ..utils import CDS_API_URL
 
 
 @dataclasses.dataclass
@@ -32,8 +33,9 @@ class UserInfo:
         return self.type.value == 'educator'
 
     def check_database(self):
+        userpath = "students" if self.is_student() else "educators"
         r = httpx.get(
-            f"http://127.0.0.1:8000/api/users/{auth.user.value['userinfo']['name']}")
+            f"{CDS_API_URL}/{userpath}/{auth.user.value['userinfo']['name']}")
 
         if r.status_code == 200:
             if r.json() is None:
